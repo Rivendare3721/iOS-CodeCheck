@@ -12,9 +12,9 @@ class ViewController: UITableViewController{
     
     @IBOutlet weak var searchBar: UISearchBar!
     
-    private(set) var repositories: [[String: Any]] = []
-    private var task: URLSessionTask?
-    var selectedIndex: Int?
+    private let service = GitHubService()
+    private var repositories: [Repository] = []
+    private var searchTask: URLSessionTask?
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -26,60 +26,47 @@ class ViewController: UITableViewController{
         searchBar.placeholder = "GitHubのリポジトリを検索できるよー"
         searchBar.delegate = self
     }
+    
+    // MARK: - Navigation
+    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
+        // 惊き最小の原則
+        guard segue.identifier == "Detail",
+              let detailVC = segue.destination as? DetailViewController,
+              let repository = sender as? Repository else { return }
+        detailVC.repository = repository
+    }
 }
 
 // MARK: - UISearchBarDelegate
+// インターフェイス分離の原則
 extension ViewController: UISearchBarDelegate{
     func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
-        // 入力内容を安全にアンラップし、URLエンコードを処理する
-        guard let searchText = searchBar.text, !searchText.isEmpty,
-              let encodedText = searchText.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) else {
-            return
-        }
         
-        let urlString = "https://api.github.com/search/repositories?q=\(encodedText)"
-        guard let url = URL(string: urlString) else { return }
+        searchBar.resignFirstResponder()
+        
+        // 入力内容を安全にアンラップし、URLエンコードを処理する
+        guard let text = searchBar.text, !text.isEmpty else { return }
         
         // 先ほどの検索タスクをキャンセルする
-        task?.cancel()
+        searchTask?.cancel()
         
         // [weak self] を使用して、循環参照によるメモリリークを防止する
-        task = URLSession.shared.dataTask(with: url) { [weak self] (data, response, error) in
-            // エラー処理
-            if let error = error {
-                print("Network Error: \(error.localizedDescription)")
-                return
-            }
-            
-            guard let data = data else { return }
-            
-            do {
-                if let jsonObject = try JSONSerialization.jsonObject(with: data) as? [String: Any],
-                   let items = jsonObject["items"] as? [[String: Any]] {
-                    
+        searchTask = service.searchRepositories(with: text) { [weak self] result in
+            DispatchQueue.main.async {
+                switch result {
+                case .success(let items):
                     self?.repositories = items
-                    
-                    DispatchQueue.main.async {
-                        self?.tableView.reloadData()
-                    }
+                    self?.tableView.reloadData()
+                case .failure(let error):
+                    print(error)
                 }
-            } catch {
-                print("JSON Parsing Error: \(error.localizedDescription)")
             }
         }
-        task?.resume()
-    }
-    
-    func searchBarShouldBeginEditing(_ searchBar: UISearchBar) -> Bool {
-        return true
-    }
-    
-    func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
-        task?.cancel()
     }
 }
 
 // MARK: - UITableViewDataSource
+// インターフェイス分離の原則
 extension ViewController {
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return repositories.count
@@ -88,30 +75,14 @@ extension ViewController {
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         // メモリリーク防止
         let cell = tableView.dequeueReusableCell(withIdentifier: "cell") ?? UITableViewCell(style: .subtitle, reuseIdentifier: "cell")
-        
         let repo = repositories[indexPath.row]
-        
-        cell.textLabel?.text = repo["full_name"] as? String ?? "Unknown"
-        cell.detailTextLabel?.text = repo["language"] as? String ?? "N/A"
-        cell.tag = indexPath.row
-        
+        cell.textLabel?.text = repo.fullName
+        cell.detailTextLabel?.text = repo.language ?? "N/A"
         return cell
     }
     
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        selectedIndex = indexPath.row
-        performSegue(withIdentifier: "Detail", sender: self)
-    }
-    
-    // MARK: - Navigation
-    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
-        guard segue.identifier == "Detail",
-              let detailVC = segue.destination as? DetailViewController,
-              let index = selectedIndex,
-              repositories.indices.contains(index)
-        else {
-            return
-        }
-        detailVC.repositoryData = repositories[index]
+        let repo = repositories[indexPath.row]
+        performSegue(withIdentifier: "Detail", sender: repo)
     }
 }

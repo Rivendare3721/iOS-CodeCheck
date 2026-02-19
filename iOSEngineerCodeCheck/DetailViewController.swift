@@ -18,7 +18,7 @@ class DetailViewController: UIViewController {
     @IBOutlet weak var forksLabel: UILabel!
     @IBOutlet weak var issuesLabel: UILabel!
     
-    var repositoryData: [String: Any]?
+    var repository: Repository?
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -29,20 +29,20 @@ class DetailViewController: UIViewController {
     
     // MARK: - UI初期化
     private func setupUI() {
-        guard let repo = repositoryData else { return }
+        // 惊き最小の原則
+        guard let repo = repository else { return }
         
-        titleLabel.text = repo["full_name"] as? String ?? "N/A"
-        languageLabel.text = "Written in \(repo["language"] as? String ?? "Unknown")"
-        starsLabel.text = "\(repo["stargazers_count"] as? Int ?? 0) stars"
-        watchersLabel.text = "\(repo["watchers_count"] as? Int ?? 0) watchers"
-        forksLabel.text = "\(repo["forks_count"] as? Int ?? 0) forks"
-        issuesLabel.text = "\(repo["open_issues_count"] as? Int ?? 0) open issues"
+        // DRY原則
+        titleLabel.text = repo.fullName
+        languageLabel.text = "Written in \(repo.language ?? "Unknown")"
+        starsLabel.text = "\(repo.stargazersCount) stars"
+        watchersLabel.text = "\(repo.watchersCount) watchers"
+        forksLabel.text = "\(repo.forksCount) forks"
+        issuesLabel.text = "\(repo.openIssuesCount) open issues"
     }
     
     private func loadAvatarImage() {
-        guard let repo = repositoryData,
-              let owner = repo["owner"] as? [String: Any],
-              let avatarURLString = owner["avatar_url"] as? String,
+        guard let avatarURLString = repository?.owner.avatarUrl,
               let url = URL(string: avatarURLString) else {
             return
         }

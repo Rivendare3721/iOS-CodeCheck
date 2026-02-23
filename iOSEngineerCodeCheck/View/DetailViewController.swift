@@ -39,6 +39,16 @@ class DetailViewController: UIViewController {
         watchersLabel.text = "\(repo.watchersCount) watchers"
         forksLabel.text = "\(repo.forksCount) forks"
         issuesLabel.text = "\(repo.openIssuesCount) open issues"
+        
+        // ナビゲーションバーの色を改修する
+        let appearance = UINavigationBarAppearance()
+        appearance.configureWithOpaqueBackground()
+        appearance.backgroundColor = .black
+        appearance.titleTextAttributes = [
+            .foregroundColor: UIColor.white
+        ]
+        navigationItem.standardAppearance = appearance
+        navigationItem.scrollEdgeAppearance = appearance
     }
     
     // MARK: - アバター画像を非同期で読み込む

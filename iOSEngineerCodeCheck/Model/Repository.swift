@@ -17,6 +17,7 @@ struct Repository: Codable {
     let watchersCount: Int
     let forksCount: Int
     let openIssuesCount: Int
+    let htmlUrl: String
     let owner: Owner
 }
 

@@ -7,6 +7,7 @@
 //
 
 import UIKit
+import SafariServices
 
 class DetailViewController: UIViewController {
     
@@ -27,6 +28,7 @@ class DetailViewController: UIViewController {
         imageView.accessibilityIdentifier = "repository_avatar_image"
         
         setupUI()
+        setupNavigationBar()
         loadAvatarImage()
     }
     
@@ -42,7 +44,9 @@ class DetailViewController: UIViewController {
         watchersLabel.text = "\(repo.watchersCount) watchers"
         forksLabel.text = "\(repo.forksCount) forks"
         issuesLabel.text = "\(repo.openIssuesCount) open issues"
-        
+    }
+    
+    private func setupNavigationBar() {
         // ナビゲーションバーの色を改修する
         let appearance = UINavigationBarAppearance()
         appearance.configureWithOpaqueBackground()
@@ -52,6 +56,27 @@ class DetailViewController: UIViewController {
         ]
         navigationItem.standardAppearance = appearance
         navigationItem.scrollEdgeAppearance = appearance
+        
+        // ナビゲーションバーの右側にブラウザ起動ボタンを追加
+        let browserButton = UIBarButtonItem(
+            image: UIImage(systemName: "safari"),
+            style: .plain,
+            target: self,
+            action: #selector(openInBrowser)
+        )
+        navigationItem.rightBarButtonItem = browserButton
+    }
+    
+    @objc private func openInBrowser() {
+        // 💡 驚き最小の原則：URLが正しいか確認してから開く
+        guard let urlString = repository?.htmlUrl,
+              let url = URL(string: urlString) else {
+            return
+        }
+        
+        // SFSafariViewControllerを使用
+        let safariVC = SFSafariViewController(url: url)
+        present(safariVC, animated: true)
     }
     
     // MARK: - アバター画像を非同期で読み込む

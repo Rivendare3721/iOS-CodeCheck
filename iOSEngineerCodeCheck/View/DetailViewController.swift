@@ -23,6 +23,9 @@ class DetailViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         
+        // UIテスト用の識別子を設定する
+        imageView.accessibilityIdentifier = "repository_avatar_image"
+        
         setupUI()
         loadAvatarImage()
     }

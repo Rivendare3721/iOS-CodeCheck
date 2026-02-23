@@ -41,6 +41,7 @@ class DetailViewController: UIViewController {
         issuesLabel.text = "\(repo.openIssuesCount) open issues"
     }
     
+    // MARK: - アバター画像を非同期で読み込む
     private func loadAvatarImage() {
         guard let avatarURLString = repository?.owner.avatarUrl,
               let url = URL(string: avatarURLString) else {
